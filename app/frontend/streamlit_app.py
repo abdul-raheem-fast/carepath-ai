@@ -23,7 +23,18 @@ st.markdown("""
 html, body, [data-testid="stAppViewContainer"] { background:#f4f6f8; font-family:'Segoe UI',Arial,sans-serif; color:#212121; }
 [data-testid="stSidebar"] { background:linear-gradient(170deg,#263238 0%,#37474f 100%); }
 [data-testid="stSidebar"] * { color:#eceff1 !important; }
-[data-testid="stSidebar"] input,[data-testid="stSidebar"] select { background:#37474f !important; border-color:#546e7a !important; }
+[data-testid="stSidebar"] [data-baseweb="input"],
+[data-testid="stSidebar"] [data-baseweb="base-input"],
+[data-testid="stSidebar"] [data-baseweb="select"] > div,
+[data-testid="stSidebar"] [data-baseweb="select"] div[class] { background:#37474f !important; border-color:#546e7a !important; }
+[data-testid="stSidebar"] input { background:#37474f !important; color:#eceff1 !important; border-color:#546e7a !important; }
+[data-testid="stSidebar"] [data-baseweb="select"] div { background:#37474f !important; color:#eceff1 !important; }
+[data-testid="stSidebar"] [data-baseweb="popover"] { background:#37474f !important; }
+[data-testid="stSidebar"] [role="listbox"] { background:#37474f !important; }
+[data-testid="stSidebar"] [role="option"] { background:#37474f !important; color:#eceff1 !important; }
+[data-testid="stSidebar"] [role="option"]:hover { background:#455a64 !important; }
+[data-testid="stSidebar"] button { background:#37474f !important; border-color:#546e7a !important; color:#eceff1 !important; }
+[data-testid="stSidebar"] svg { fill:#eceff1 !important; }
 .card { background:#fff; border-radius:12px; padding:20px 24px; margin-bottom:16px; box-shadow:0 1px 6px rgba(0,0,0,0.09); }
 .card-green  { border-left:5px solid #2e7d32; }
 .card-amber  { border-left:5px solid #e65100; }
