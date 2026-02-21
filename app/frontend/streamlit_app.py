@@ -18,11 +18,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-# ── Inject secrets into environment so config.py can read them ───────────────
+# ── Inject secrets into environment BEFORE any backend imports ───────────────
+# This must happen before get_settings() is first called (it uses lru_cache).
 try:
     for _k, _v in st.secrets.items():
         if isinstance(_v, str):
-            os.environ.setdefault(_k, _v)
+            os.environ[_k] = _v
+except Exception:
+    pass
+
+# ── Also clear pydantic settings cache so it re-reads env vars ───────────────
+try:
+    from app.backend.config import get_settings
+    get_settings.cache_clear()
 except Exception:
     pass
 
