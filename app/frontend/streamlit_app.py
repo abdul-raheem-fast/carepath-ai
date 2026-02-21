@@ -19,15 +19,27 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 # ── Inject secrets into environment BEFORE any backend imports ───────────────
-# This must happen before get_settings() is first called (it uses lru_cache).
-try:
-    for _k, _v in st.secrets.items():
-        if isinstance(_v, str):
-            os.environ[_k] = _v
-except Exception:
-    pass
+# Read each key explicitly — iterating st.secrets can miss nested tables.
+def _inject_secrets() -> None:
+    try:
+        _keys = [
+            "GROQ_API_KEY", "GROQ_MODEL", "DEFAULT_LLM_PROVIDER",
+            "APP_NAME", "ENVIRONMENT", "DB_PATH", "UPLOADS_DIR",
+            "KNOWLEDGE_BASE_DIR", "MAX_UPLOAD_SIZE_MB", "LOG_LEVEL",
+        ]
+        for _k in _keys:
+            try:
+                _v = st.secrets[_k]
+                if _v:
+                    os.environ[_k] = str(_v)
+            except KeyError:
+                pass
+    except Exception:
+        pass
 
-# ── Also clear pydantic settings cache so it re-reads env vars ───────────────
+_inject_secrets()
+
+# ── Clear pydantic lru_cache so it re-reads the now-populated env vars ───────
 try:
     from app.backend.config import get_settings
     get_settings.cache_clear()
@@ -161,6 +173,21 @@ def med_chips(meds: List[Dict]) -> str:
     return "".join(f'<span class="chip chip-med">💊 {m["name"]} {m["dose"]}</span>' for m in meds)
 
 
+# ── LLM helper that reads directly from st.secrets (bypasses all caching) ────
+def _get_llm():
+    try:
+        api_key = str(st.secrets.get("GROQ_API_KEY", "")).strip()
+        model   = str(st.secrets.get("GROQ_MODEL", "llama-3.1-8b-instant")).strip()
+    except Exception:
+        api_key = os.environ.get("GROQ_API_KEY", "").strip()
+        model   = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant").strip()
+    if api_key:
+        from app.ml.llm import GroqLLM
+        return GroqLLM(api_key, model)
+    from app.ml.llm import FallbackLLM
+    return FallbackLLM()
+
+
 # ── Direct processing functions (no HTTP) ────────────────────────────────────
 def process_document_directly(uploaded: Any, age: int, condition: str, language: str) -> Optional[Dict[str, Any]]:
     try:
@@ -235,7 +262,7 @@ def chat_directly(upload_id: int, question: str) -> Optional[Dict]:
             f"Question: {question}\n\nContext:\n{context}\n\n"
             f"Disclaimer: {DISCLAIMER}"
         )
-        generated = get_llm_provider().generate(prompt)
+        generated = _get_llm().generate(prompt)   # uses st.secrets directly
         answer    = grounded_answer(citations, generated)
         coverage  = citation_coverage(question, citations)
         save_metric("chat_citation_coverage", coverage, f"upload:{upload_id}")
