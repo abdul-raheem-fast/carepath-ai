@@ -78,6 +78,7 @@ html, body, [data-testid="stAppViewContainer"] { background:#f4f6f8; font-family
 [data-testid="stSidebar"] [data-baseweb="select"] > div,
 [data-testid="stSidebar"] [data-baseweb="select"] div[class] { background:#37474f !important; border-color:#546e7a !important; }
 [data-testid="stSidebar"] input { background:#37474f !important; color:#eceff1 !important; border-color:#546e7a !important; }
+[data-testid="stSidebar"] input::placeholder { color:#90a4ae !important; opacity:1 !important; }
 [data-testid="stSidebar"] [data-baseweb="select"] div { background:#37474f !important; color:#eceff1 !important; }
 [data-testid="stSidebar"] [data-baseweb="popover"] { background:#37474f !important; }
 [data-testid="stSidebar"] [role="listbox"] { background:#37474f !important; }
