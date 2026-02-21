@@ -2,6 +2,8 @@
 
 **AI-powered patient recovery assistant delivering bilingual guidance, medication safety checks, and adherence support.**
 
+[**Live Demo (Streamlit Cloud)**](https://carepath-ai.streamlit.app/)
+
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.129-green.svg)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.54-red.svg)](https://streamlit.io/)

@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List
 
+import numpy as np
 import pdfplumber
 import pytesseract
 from PIL import Image
@@ -49,8 +50,35 @@ def _extract_text_pdf(file_bytes: bytes) -> str:
 
 
 def _extract_text_image(file_bytes: bytes) -> str:
-    image = Image.open(io.BytesIO(file_bytes))
-    return pytesseract.image_to_string(image)
+    image = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+
+    # Prefer system Tesseract when available (best accuracy for many cases).
+    try:
+        _ = pytesseract.get_tesseract_version()
+        return pytesseract.image_to_string(image)
+    except Exception:
+        pass
+
+    # Streamlit Cloud often doesn't include the Tesseract binary.
+    # Fall back to a pure-pip OCR engine if installed.
+    try:
+        from rapidocr_onnxruntime import RapidOCR  # type: ignore
+
+        ocr = RapidOCR()
+        img = np.asarray(image)
+        result, _ = ocr(img)
+        if not result:
+            return ""
+        # result items: [ [box], ("text", score) ] in common RapidOCR outputs
+        texts: List[str] = []
+        for item in result:
+            try:
+                texts.append(str(item[1][0]).strip())
+            except Exception:
+                continue
+        return "\n".join([t for t in texts if t]).strip()
+    except Exception:
+        return ""
 
 
 def extract_entities(text: str) -> Dict[str, Any]:

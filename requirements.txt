@@ -12,6 +12,8 @@ spacy
 pytesseract
 pdfplumber
 pillow
+rapidocr-onnxruntime
+opencv-python-headless
 langchain
 langchain-community
 langchain-text-splitters
