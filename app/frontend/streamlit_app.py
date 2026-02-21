@@ -1,21 +1,71 @@
 """
-CarePath AI - Streamlit Frontend
+CarePath AI - Streamlit Frontend (Self-Contained, no HTTP backend needed)
+All ML/backend logic is imported and called directly.
 HCI Design Principles: colorblind-safe palette, no blue for important messages,
 icon+color for status (never color alone), complete HTML blocks (no split divs).
 """
 
 import os
+import sys
+import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import requests
 import streamlit as st
 
-try:
-    API_BASE_URL = st.secrets.get("API_BASE_URL", os.getenv("API_BASE_URL", "http://localhost:8000"))
-except Exception:
-    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+# ── Path setup so imports work on Streamlit Cloud ────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
+# ── Inject secrets into environment so config.py can read them ───────────────
+try:
+    for _k, _v in st.secrets.items():
+        if isinstance(_v, str):
+            os.environ.setdefault(_k, _v)
+except Exception:
+    pass
+
+# ── Import backend modules directly ──────────────────────────────────────────
+_BACKEND_OK = False
+_BACKEND_ERR = ""
+try:
+    from app.backend.db import (
+        get_stats,
+        get_metric_summary,
+        get_upload,
+        init_db,
+        save_chat,
+        save_metric,
+        save_reminder,
+        save_upload,
+    )
+    from app.backend.handout import build_patient_handout_pdf
+    from app.backend.metrics import citation_coverage, estimate_readability_score, grounded_answer
+    from app.ml.advanced_features import (
+        build_recovery_scorecard,
+        generate_doctor_questions,
+        medication_safety_scan,
+        simulate_adherence_impact,
+    )
+    from app.ml.llm import get_llm_provider
+    from app.ml.parser import extract_entities, extract_text
+    from app.ml.recommender import (
+        DISCLAIMER,
+        build_care_plan,
+        build_red_flags,
+        build_reminders,
+        generate_patient_summary,
+    )
+    from app.ml.risk import compute_risk_score
+    from app.rag.retriever import retrieve_context
+
+    init_db()
+    _BACKEND_OK = True
+except Exception as _e:
+    _BACKEND_ERR = str(_e)
+
+# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="CarePath AI", page_icon="🏥", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
@@ -77,20 +127,7 @@ html, body, [data-testid="stAppViewContainer"] { background:#f4f6f8; font-family
 """, unsafe_allow_html=True)
 
 
-def call_api(method: str, endpoint: str, **kwargs: Any) -> requests.Response:
-    return requests.request(method, f"{API_BASE_URL}{endpoint}", timeout=120, **kwargs)
-
-
-def process_upload(uploaded: Any, age: int, condition: str, language: str) -> Optional[Dict[str, Any]]:
-    files = {"file": (uploaded.name, uploaded.getvalue(), uploaded.type or "application/octet-stream")}
-    data  = {"age": age, "condition": condition, "language_preference": language}
-    resp  = call_api("POST", "/process", files=files, data=data)
-    if resp.status_code != 200:
-        st.error(f"❌ Processing failed ({resp.status_code}): {resp.text[:300]}")
-        return None
-    return resp.json()
-
-
+# ── Helper UI functions ───────────────────────────────────────────────────────
 def risk_badge(risk: str) -> str:
     icon = {"low": "✅", "medium": "⚠️", "high": "🚨"}.get(risk.lower(), "❓")
     cls  = {"low": "badge-low", "medium": "badge-medium", "high": "badge-high"}.get(risk.lower(), "badge-low")
@@ -115,6 +152,111 @@ def med_chips(meds: List[Dict]) -> str:
     return "".join(f'<span class="chip chip-med">💊 {m["name"]} {m["dose"]}</span>' for m in meds)
 
 
+# ── Direct processing functions (no HTTP) ────────────────────────────────────
+def process_document_directly(uploaded: Any, age: int, condition: str, language: str) -> Optional[Dict[str, Any]]:
+    try:
+        content  = uploaded.getvalue()
+        filename = uploaded.name
+        start    = time.perf_counter()
+
+        extracted_text = extract_text(filename, content)
+        if not extracted_text.strip():
+            extracted_text = "No meaningful text was detected. Please provide a clearer report."
+
+        entities          = extract_entities(extracted_text)
+        summary_en, summary_ur = generate_patient_summary(extracted_text, entities)
+        care_plan         = build_care_plan(entities, age=age, condition=condition or None)
+        reminders         = build_reminders(entities)
+        red_flags         = build_red_flags(entities)
+        risk_score, risk_factors = compute_risk_score(entities, age=age)
+        safety_alerts     = medication_safety_scan(entities)
+        recovery_scorecard = build_recovery_scorecard(entities, age=age, risk_score=risk_score)
+        doctor_questions  = generate_doctor_questions(entities, condition or None)
+        readability       = estimate_readability_score(summary_en)
+
+        upload_payload: Dict[str, Any] = {
+            "filename": filename,
+            "file_path": filename,
+            "extracted_text": extracted_text,
+            "entities": entities,
+            "summary_en": summary_en,
+            "summary_ur": summary_ur,
+            "care_plan": care_plan,
+            "reminders": reminders,
+            "red_flags": red_flags,
+            "risk_score": risk_score,
+            "risk_factors": risk_factors,
+        }
+        upload_id = save_upload(upload_payload)
+        for r in reminders:
+            save_reminder(upload_id, r["message"], r["remind_at"])
+
+        latency_ms = (time.perf_counter() - start) * 1000
+        save_metric("process_latency_ms", latency_ms, f"upload:{upload_id}")
+        save_metric("summary_readability_score", readability, f"upload:{upload_id}")
+
+        return {
+            "upload_id": upload_id,
+            "filename": filename,
+            "entities": entities,
+            "summary_en": summary_en,
+            "summary_ur": summary_ur,
+            "care_plan": care_plan,
+            "reminders": reminders,
+            "red_flags": red_flags,
+            "risk_score": risk_score,
+            "risk_factors": risk_factors,
+            "safety_alerts": safety_alerts,
+            "recovery_scorecard": recovery_scorecard,
+            "doctor_questions": doctor_questions,
+            "disclaimer": DISCLAIMER,
+        }
+    except Exception as exc:
+        st.error(f"❌ Processing error: {exc}")
+        return None
+
+
+def chat_directly(upload_id: int, question: str) -> Optional[Dict]:
+    try:
+        upload = get_upload(upload_id)
+        context, citations = retrieve_context(question, upload["extracted_text"])
+        prompt = (
+            "You are CarePath AI. Only answer using provided context.\n"
+            "If answer is not found, clearly say so.\n\n"
+            f"Question: {question}\n\nContext:\n{context}\n\n"
+            f"Disclaimer: {DISCLAIMER}"
+        )
+        generated = get_llm_provider().generate(prompt)
+        answer    = grounded_answer(citations, generated)
+        coverage  = citation_coverage(question, citations)
+        save_metric("chat_citation_coverage", coverage, f"upload:{upload_id}")
+        save_chat(upload_id, question, answer, citations)
+        return {"answer": answer, "citations": citations}
+    except Exception as exc:
+        st.error(f"❌ Chat error: {exc}")
+        return None
+
+
+def export_handout_directly(upload_id: int) -> Optional[bytes]:
+    try:
+        upload = get_upload(upload_id)
+        return build_patient_handout_pdf(upload)
+    except Exception as exc:
+        st.error(f"❌ PDF export error: {exc}")
+        return None
+
+
+def simulate_directly(upload_id: int, adherence_percent: int) -> Optional[Dict]:
+    try:
+        upload  = get_upload(upload_id)
+        outcome = simulate_adherence_impact(upload["risk_score"], adherence_percent)
+        save_metric("adherence_simulation_percent", float(adherence_percent), f"upload:{upload_id}")
+        return outcome
+    except Exception as exc:
+        st.error(f"❌ Simulation error: {exc}")
+        return None
+
+
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
@@ -133,6 +275,15 @@ with st.sidebar:
     st.markdown('<hr style="border:none;border-top:1px solid #546e7a;margin:8px 0;">', unsafe_allow_html=True)
     st.markdown('<div style="background:#37474f;border-radius:8px;padding:10px 12px;font-size:0.82rem;">⚕️ <strong>Not a medical diagnosis.</strong><br>Always consult a licensed doctor.</div>', unsafe_allow_html=True)
 
+# ── Backend error banner ──────────────────────────────────────────────────────
+if not _BACKEND_OK:
+    st.markdown(
+        f'<div class="card card-red"><p class="sec-hdr">⚠️ Backend Module Error</p>'
+        f'<p style="font-size:0.85rem;color:#7f0000;">{_BACKEND_ERR}</p></div>',
+        unsafe_allow_html=True,
+    )
+    st.stop()
+
 # ── Hero ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="background:linear-gradient(135deg,#263238,#37474f);border-radius:14px;padding:26px 30px;margin-bottom:20px;color:#eceff1;">
@@ -144,7 +295,6 @@ st.markdown("""
 tab_care, tab_admin, tab_pitch = st.tabs(["🩺 Care Assistant", "📊 Admin Insights", "🏆 Pitch Highlights"])
 
 with tab_care:
-    # Upload
     st.markdown('<div class="card card-teal"><p class="sec-hdr">📁 Upload Medical Report</p><p style="font-size:0.85rem;color:#004d40;margin:0;">Supported formats: PDF &nbsp;·&nbsp; PNG &nbsp;·&nbsp; JPG &nbsp;·&nbsp; TXT</p></div>', unsafe_allow_html=True)
     uploaded_file = st.file_uploader("Upload", type=["pdf","png","jpg","jpeg","txt"], label_visibility="collapsed")
     col_btn, col_hint = st.columns([1, 3])
@@ -156,7 +306,7 @@ with tab_care:
 
     if generate_clicked and uploaded_file:
         with st.spinner("🔍 Extracting clinical data and generating care plan…"):
-            result = process_upload(uploaded_file, int(age), condition, language_preference)
+            result = process_document_directly(uploaded_file, int(age), condition, language_preference)
         if result:
             result["generated_at"] = datetime.utcnow().isoformat()
             st.session_state["last_result"] = result
@@ -182,15 +332,19 @@ with tab_care:
     with col_dl:
         if st.button("📥 Download Patient Handout PDF", type="primary", use_container_width=True):
             with st.spinner("Building PDF…"):
-                hr = call_api("GET", f"/export/handout/{result['upload_id']}")
-            if hr.status_code == 200:
-                st.download_button("💾 Save Handout PDF", data=hr.content, file_name=f"carepath_handout_{result['upload_id']}.pdf", mime="application/pdf", type="primary", use_container_width=True)
-            else:
-                st.error(f"Export failed: {hr.status_code}")
+                pdf_bytes = export_handout_directly(result["upload_id"])
+            if pdf_bytes:
+                st.download_button(
+                    "💾 Save Handout PDF",
+                    data=pdf_bytes,
+                    file_name=f"carepath_handout_{result['upload_id']}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True,
+                )
 
     st.markdown("---")
 
-    # Summaries
     col_en, col_ur = st.columns(2)
     with col_en:
         st.markdown(f'<div class="card card-teal"><p class="sec-hdr">📋 Patient Summary (English)</p><p style="font-size:0.93rem;line-height:1.75;color:#1b5e20;">{result["summary_en"]}</p></div>', unsafe_allow_html=True)
@@ -198,20 +352,18 @@ with tab_care:
         ur_clean = result["summary_ur"].split("English summary excerpt:")[0].replace("اردو خلاصہ (خودکار):", "").strip()
         st.markdown(f'<div class="card card-green"><p class="sec-hdr">📋 خلاصہ (اردو)</p><div class="urdu-box">{ur_clean}</div></div>', unsafe_allow_html=True)
 
-    # Care Plan + Scorecard
     col_plan, col_score = st.columns([3, 2])
     with col_plan:
         plan_rows = "".join(f"<tr><td>⏰ <strong>{r['time']}</strong></td><td>{r['activity']}</td></tr>" for r in result["care_plan"])
         st.markdown(f'<div class="card card-slate"><p class="sec-hdr">📅 Personalized Daily Care Plan</p><table class="cp-tbl"><thead><tr><th>Time</th><th>Activity</th></tr></thead><tbody>{plan_rows}</tbody></table></div>', unsafe_allow_html=True)
     with col_score:
-        sc = result["recovery_scorecard"]
-        bars = (bar_html("Overall Recovery", sc["overall_recovery_readiness"], "#00695c") +
-                bar_html("Adherence Readiness", sc["adherence_readiness"], "#2e7d32") +
-                bar_html("Follow-up Clarity", sc["followup_clarity"], "#e65100") +
-                bar_html("Monitoring Strength", sc["monitoring_strength"], "#6a1b9a"))
+        sc   = result["recovery_scorecard"]
+        bars = (bar_html("Overall Recovery",     sc["overall_recovery_readiness"], "#00695c") +
+                bar_html("Adherence Readiness",  sc["adherence_readiness"],        "#2e7d32") +
+                bar_html("Follow-up Clarity",    sc["followup_clarity"],           "#e65100") +
+                bar_html("Monitoring Strength",  sc["monitoring_strength"],        "#6a1b9a"))
         st.markdown(f'<div class="card card-purple"><p class="sec-hdr">📈 Recovery Scorecard</p>{bars}</div>', unsafe_allow_html=True)
 
-    # Risk + Red Flags + Safety
     col_risk, col_flags, col_safety = st.columns(3)
     with col_risk:
         factors_li = "".join(f"<li style='margin:5px 0;'>{f}</li>" for f in result["risk_factors"])
@@ -222,13 +374,16 @@ with tab_care:
         st.markdown(f'<div class="card card-red"><p class="sec-hdr">🚨 Red-Flag Warnings</p><ul style="margin:0;padding-left:18px;font-size:0.84rem;">{flags_li}</ul></div>', unsafe_allow_html=True)
     with col_safety:
         alerts = result.get("safety_alerts", [])
-        body = "".join(f"<li style='margin:6px 0;'>⚠️ {a}</li>" for a in alerts) if alerts else '<li style="color:#1b5e20;">✅ No conflicts detected.</li>'
+        body   = "".join(f"<li style='margin:6px 0;'>⚠️ {a}</li>" for a in alerts) if alerts else '<li style="color:#1b5e20;">✅ No conflicts detected.</li>'
         st.markdown(f'<div class="card card-amber"><p class="sec-hdr">💊 Medication Safety</p><ul style="margin:0;padding-left:18px;font-size:0.84rem;color:#bf360c;">{body}</ul></div>', unsafe_allow_html=True)
 
-    # Reminders + Entities
     col_rem, col_ent = st.columns(2)
     with col_rem:
-        rem_li = "".join(f'<li style="margin:8px 0;">🔔 <strong>{r["message"]}</strong><br><span style="font-size:0.77rem;color:#78909c;">{r["remind_at"][:16].replace("T"," ")} UTC</span></li>' for r in result["reminders"])
+        rem_li = "".join(
+            f'<li style="margin:8px 0;">🔔 <strong>{r["message"]}</strong><br>'
+            f'<span style="font-size:0.77rem;color:#78909c;">{r["remind_at"][:16].replace("T"," ")} UTC</span></li>'
+            for r in result["reminders"]
+        )
         st.markdown(f'<div class="card card-slate"><p class="sec-hdr">⏰ Reminders</p><ul style="margin:0;padding-left:18px;font-size:0.88rem;">{rem_li}</ul></div>', unsafe_allow_html=True)
     with col_ent:
         ents = result["entities"]
@@ -240,20 +395,17 @@ with tab_care:
             f'<p style="font-size:0.8rem;font-weight:700;color:#37474f;margin:10px 0 3px;">Follow-up</p>{chips(ents.get("follow_up",[]),"chip-fu","📅 ")}'
             f'</div>', unsafe_allow_html=True)
 
-    # Doctor questions
     dqs = result.get("doctor_questions", [])
     if dqs:
         dq_li = "".join(f'<li style="margin:8px 0;">❓ {q}</li>' for q in dqs)
         st.markdown(f'<div class="card card-purple"><p class="sec-hdr">🩺 Questions to Ask Your Doctor</p><ul style="margin:0;padding-left:18px;font-size:0.88rem;color:#4a148c;">{dq_li}</ul></div>', unsafe_allow_html=True)
 
-    # Adherence Simulator
     st.markdown('<div class="card card-teal"><p class="sec-hdr">🎮 Adherence Impact Simulator</p><p style="font-size:0.87rem;color:#004d40;margin:0;">Adjust your expected adherence to see projected outcomes and AI coaching tips.</p></div>', unsafe_allow_html=True)
     adherence_val = st.slider("Expected adherence over next 14 days", min_value=40, max_value=100, value=80, step=5, format="%d%%")
     if st.button("🚀 Simulate Outcome", key="sim_btn"):
         with st.spinner("Running simulation…"):
-            sr = call_api("POST", "/simulate/adherence", json={"upload_id": result["upload_id"], "adherence_percent": adherence_val})
-        if sr.status_code == 200:
-            sim = sr.json()
+            sim = simulate_directly(result["upload_id"], adherence_val)
+        if sim:
             sc1, sc2, sc3 = st.columns(3)
             sc1.metric("Projected Risk", sim["projected_risk"].upper())
             with sc2:
@@ -262,10 +414,7 @@ with tab_care:
             with sc3:
                 tip_li = "".join(f"<li>{t}</li>" for t in sim["coaching_tips"])
                 st.markdown(f'<strong style="font-size:0.85rem;color:#4a148c;">💡 AI Coaching Tips</strong><ul style="font-size:0.84rem;margin:5px 0;padding-left:16px;color:#37474f;">{tip_li}</ul>', unsafe_allow_html=True)
-        else:
-            st.error(f"Simulation failed: {sr.status_code}")
 
-    # Chatbot
     st.markdown('<div class="card card-green"><p class="sec-hdr">💬 Grounded Q&A Chatbot</p><p style="font-size:0.85rem;color:#1b5e20;margin:0;">Answers grounded in your uploaded report and approved medical knowledge base. Citations shown for every response.</p></div>', unsafe_allow_html=True)
     if "chat_history" not in st.session_state:
         st.session_state["chat_history"] = []
@@ -284,35 +433,29 @@ with tab_care:
             st.rerun()
     if ask_clicked and question.strip():
         with st.spinner("Searching report + knowledge base…"):
-            cr = call_api("POST", "/chat", json={"upload_id": result["upload_id"], "question": question})
-        if cr.status_code == 200:
-            cd = cr.json()
+            cd = chat_directly(result["upload_id"], question)
+        if cd:
             st.session_state["chat_history"].append({"q": question, "a": cd["answer"], "citations": cd.get("citations", [])})
             st.rerun()
-        else:
-            st.error(f"Chat error: {cr.status_code}")
 
     st.markdown(f'<div class="disc">⚕️ {result["disclaimer"]}</div>', unsafe_allow_html=True)
 
 with tab_admin:
     st.markdown('<div class="card card-teal"><p class="sec-hdr">📊 Admin Analytics Dashboard</p></div>', unsafe_allow_html=True)
     try:
-        stats_resp = call_api("GET", "/admin/insights")
-        if stats_resp.status_code == 200:
-            p = stats_resp.json()
-            c1, c2, c3 = st.columns(3)
-            c1.metric("📁 Total Uploads", p["total_uploads"])
-            c2.metric("💬 Total Chats", p["total_chats"])
-            c3.metric("🔔 Total Reminders", p["total_reminders"])
-            if p["avg_metrics"]:
-                metric_bars = "".join(bar_html(k.replace("_"," ").title(), int(min(v,100)), "#00695c") for k, v in p["avg_metrics"].items())
-                st.markdown(f'<div class="card card-teal"><p class="sec-hdr">⚙️ Average Evaluation Metrics</p>{metric_bars}</div>', unsafe_allow_html=True)
-            else:
-                st.info("No metrics yet — upload a report and use the chatbot to populate.")
+        uploads, chats, reminders_count = get_stats()
+        c1, c2, c3 = st.columns(3)
+        c1.metric("📁 Total Uploads", uploads)
+        c2.metric("💬 Total Chats", chats)
+        c3.metric("🔔 Total Reminders", reminders_count)
+        avg_metrics = get_metric_summary()
+        if avg_metrics:
+            metric_bars = "".join(bar_html(k.replace("_"," ").title(), int(min(v, 100)), "#00695c") for k, v in avg_metrics.items())
+            st.markdown(f'<div class="card card-teal"><p class="sec-hdr">⚙️ Average Evaluation Metrics</p>{metric_bars}</div>', unsafe_allow_html=True)
         else:
-            st.error(f"Could not fetch insights: {stats_resp.status_code}")
+            st.markdown('<div class="card card-slate"><p style="color:#546e7a;font-size:0.88rem;">No metrics yet — upload a report and use the chatbot to populate.</p></div>', unsafe_allow_html=True)
     except Exception as exc:
-        st.error(f"Admin panel error: {exc}")
+        st.markdown(f'<div class="card card-amber"><p style="color:#bf360c;">Admin panel error: {exc}</p></div>', unsafe_allow_html=True)
 
 with tab_pitch:
     st.markdown('<div style="background:linear-gradient(135deg,#263238,#37474f);border-radius:14px;padding:26px 30px;margin-bottom:20px;color:#eceff1;"><h2 style="margin:0;color:#fff;">🏆 Why CarePath AI Wins</h2><p style="opacity:0.8;margin:6px 0 0;">Judge-friendly pitch highlights</p></div>', unsafe_allow_html=True)
@@ -320,7 +463,7 @@ with tab_pitch:
         ("🤖 Generative AI Innovation", "card-teal", "#00695c", "Bilingual clinical simplification (English + Urdu) via Groq Llama 3.1. Source-grounded Q&A with citation snippets eliminates hallucinations."),
         ("🌍 Real-world Impact", "card-green", "#1b5e20", "70% of medication non-adherence stems from patient confusion. CarePath AI provides culturally appropriate Urdu output and structured daily care plans for low-literacy populations in Pakistan and South Asia."),
         ("⚙️ Technical Implementation", "card-purple", "#4a148c", "End-to-end pipeline: OCR → entity extraction → LLM summary → RAG chatbot → risk scoring → adherence simulation → PDF export. FastAPI · Streamlit · Docker · APScheduler · SQLite."),
-        ("📋 Reproducibility", "card-slate", "#263238", "10-minute local setup, Docker Compose, pytest suite (5 tests passing), sample data reports, seed script, architecture diagram, and HACKATHON_SUBMISSION.md."),
+        ("📋 Reproducibility", "card-slate", "#263238", "10-minute local setup, Docker Compose, pytest suite, sample data reports, seed script, architecture diagram, and HACKATHON_SUBMISSION.md."),
     ]
     p1, p2 = st.columns(2)
     for col, (title, card_cls, color, desc) in zip([p1, p2, p1, p2], pitch_items):
