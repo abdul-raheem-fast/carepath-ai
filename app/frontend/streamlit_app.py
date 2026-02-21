@@ -432,14 +432,24 @@ with tab_care:
         for c in entry.get("citations", []):
             st.markdown(f'<div class="chat-cite">📎 {c}</div>', unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
-    question = st.text_input("Your question", placeholder="e.g. What are my follow-up instructions?", label_visibility="collapsed", key="chat_input")
-    col_ask, col_clr = st.columns([1, 6])
-    with col_ask:
-        ask_clicked = st.button("Ask ➤", disabled=not bool(question.strip()), use_container_width=True)
-    with col_clr:
-        if st.button("🗑️ Clear chat", key="clear_chat"):
-            st.session_state["chat_history"] = []
-            st.rerun()
+
+    # Form so pressing Enter submits directly — no button click required
+    with st.form(key="chat_form", clear_on_submit=True):
+        question = st.text_input(
+            "Ask a question about your report",
+            placeholder="e.g. What are my follow-up instructions? (Press Enter or click Ask)",
+            label_visibility="collapsed",
+        )
+        col_ask, col_clr = st.columns([1, 5])
+        with col_ask:
+            ask_clicked = st.form_submit_button("Ask ➤", use_container_width=True)
+        with col_clr:
+            clear_clicked = st.form_submit_button("🗑️ Clear chat", use_container_width=False)
+
+    if clear_clicked:
+        st.session_state["chat_history"] = []
+        st.rerun()
+
     if ask_clicked and question.strip():
         with st.spinner("Searching report + knowledge base…"):
             cd = chat_directly(result["upload_id"], question)

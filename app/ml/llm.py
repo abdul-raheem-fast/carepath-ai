@@ -1,8 +1,7 @@
+import os
 from typing import Protocol
 
 import requests
-
-from app.backend.config import get_settings
 
 
 class LLMProvider(Protocol):
@@ -53,7 +52,18 @@ class GroqLLM:
 
 
 def get_llm_provider() -> LLMProvider:
-    settings = get_settings()
-    if settings.default_llm_provider == "groq" and settings.groq_api_key:
-        return GroqLLM(settings.groq_api_key, settings.groq_model)
+    # Read directly from os.environ every call — bypasses lru_cache on Settings.
+    api_key = os.environ.get("GROQ_API_KEY", "")
+    model   = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+    provider = os.environ.get("DEFAULT_LLM_PROVIDER", "fallback")
+    if provider == "groq" and api_key:
+        return GroqLLM(api_key, model)
+    # Fall back to cached settings as secondary source
+    try:
+        from app.backend.config import get_settings
+        s = get_settings()
+        if s.groq_api_key:
+            return GroqLLM(s.groq_api_key, s.groq_model)
+    except Exception:
+        pass
     return FallbackLLM()
