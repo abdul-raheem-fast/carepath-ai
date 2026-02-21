@@ -1,0 +1,56 @@
+LAB REPORT & PRESCRIPTION
+===========================
+Patient: Bilal Shahid | Age: 35 | Male
+Date: 2026-02-17
+Doctor: Dr. Sana Arshad, MBBS, FCPS (Pulmonology)
+Clinic: Pakistan Institute of Medical Sciences (PIMS), Islamabad
+
+DIAGNOSIS:
+- Bronchial Asthma (moderate persistent)
+- Allergic Rhinitis
+
+PRESENTING SYMPTOMS:
+Recurrent episodes of wheezing, chest tightness, dry cough (worse at night and early morning), shortness of breath on exertion for the past 3 months. ACT score: 15 (poorly controlled).
+
+SPIROMETRY RESULTS:
+- FEV1: 68% predicted (moderate obstruction)
+- FEV1/FVC ratio: 0.64 (obstructive pattern)
+- Post-bronchodilator FEV1: 78% (significant reversibility — confirms asthma)
+
+BLOOD TESTS:
+- Total IgE: 480 IU/mL (elevated — allergic component)
+- Eosinophil count: 680 cells/uL (elevated)
+- CBC: Normal
+- Skin Prick Test: Positive for house dust mite, cat dander, cockroach
+
+PRESCRIBED MEDICATIONS:
+1. Budesonide/Formoterol 160/4.5 mcg inhaler — 2 puffs twice daily (maintenance)
+2. Salbutamol 100 mcg inhaler — 2 puffs as needed (reliever, max 4 times/day)
+3. Montelukast 10 mg once daily (at night)
+4. Cetirizine 10 mg once daily (at night — for allergic rhinitis)
+5. Nasal saline spray — 2 sprays each nostril twice daily
+
+INHALER TECHNIQUE INSTRUCTIONS:
+- Shake inhaler well before each use
+- Breathe out fully, place mouthpiece in mouth, seal lips
+- Press canister while breathing in slowly and deeply for 3-4 seconds
+- Hold breath for 10 seconds, then breathe out slowly
+- Rinse mouth with water after using steroid inhaler to prevent oral thrush
+- Use spacer device if available (especially important for Budesonide/Formoterol)
+
+TRIGGER AVOIDANCE:
+- Use dust-mite proof covers on mattress and pillows
+- Wash bedding weekly in hot water (>60°C)
+- Avoid cats and carpets if possible
+- Do NOT use aspirin or NSAIDs — may trigger severe asthma
+- Avoid smoke, strong perfumes, paint fumes
+- Keep windows closed during high-pollen season
+
+FOLLOW-UP:
+- Review in 6 weeks to assess asthma control (ACT score target >19)
+- Bring inhalers to every appointment for technique assessment
+- Spirometry to be repeated in 3 months
+
+EMERGENCY: If reliever inhaler not working after 3 doses — GO TO EMERGENCY IMMEDIATELY
+
+Signed: Dr. Sana Arshad | PMDC: 54321

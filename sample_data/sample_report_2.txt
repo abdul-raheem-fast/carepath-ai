@@ -1,0 +1,61 @@
+OUTPATIENT CLINIC PRESCRIPTION
+================================
+Clinic: Aga Khan University Hospital — Cardiology OPD
+Date: 2026-02-18
+Patient: Ayesha Raza | Age: 62 years | Female
+Physician: Dr. Tariq Hussain, FCPS (Cardiology)
+
+CHIEF COMPLAINT:
+Shortness of breath on exertion (NYHA Class II), ankle swelling, and fatigue for 4 weeks.
+
+DIAGNOSIS:
+1. Ischemic Heart Disease (post-MI, 2024)
+2. Chronic Heart Failure with reduced ejection fraction (HFrEF, EF: 35%)
+3. Hypertension
+4. Atrial Fibrillation (permanent)
+
+INVESTIGATIONS REVIEWED:
+- Echocardiogram (2026-02-10): EF 35%, dilated left ventricle, mild mitral regurgitation
+- ECG: Atrial fibrillation, rate controlled
+- BNP: 680 pg/mL (elevated — heart failure marker)
+- Serum Electrolytes: Na 138, K 4.1 (normal)
+- Chest X-Ray: Cardiomegaly, mild pulmonary congestion
+
+PRESCRIBED MEDICATIONS:
+1. Bisoprolol 5 mg once daily (morning — do NOT stop suddenly)
+2. Ramipril 5 mg once daily (morning — monitor BP and kidney function)
+3. Furosemide 40 mg once daily (morning — take early to avoid night urination)
+4. Spironolactone 25 mg once daily (morning)
+5. Warfarin 3 mg once daily (evening — requires INR monitoring every 2 weeks)
+6. Digoxin 0.125 mg once daily (morning)
+7. Atorvastatin 40 mg once daily (at night)
+
+IMPORTANT MEDICATION NOTES:
+- Warfarin: Check INR in 2 weeks. Target INR 2-3. Avoid green leafy vegetables in excess.
+- Bisoprolol: Never stop abruptly — risk of rebound tachycardia
+- Furosemide: Weigh yourself daily. If weight increases by >2 kg in 2 days, call clinic.
+- Ramipril: May cause dry cough. Do NOT take NSAIDs (ibuprofen) with this medication.
+
+LIFESTYLE ADVICE:
+- Salt restriction: <2 g sodium per day (no added salt)
+- Fluid restriction: 1.5-2 litres per day
+- Daily weight monitoring — weigh every morning after urination
+- Avoid strenuous exercise; gentle walking 15-20 min/day if tolerated
+- Smoking cessation mandatory
+- Elevate head of bed 30 degrees to reduce breathlessness at night
+
+FOLLOW-UP:
+- Review in 4 weeks — Cardiology OPD, Appointment booked: March 18, 2026
+- INR check in 2 weeks at nearest lab (send result to clinic via WhatsApp: 0300-XXXXXXX)
+- Emergency contact: Cardiology Emergency, AKUH — 021-111-911-911
+
+DANGER SIGNS — GO TO EMERGENCY IMMEDIATELY:
+- Sudden severe chest pain or pressure
+- Coughing up blood or pink frothy sputum
+- Breathlessness at rest or unable to lie flat
+- Fainting or loss of consciousness
+- Heart rate below 45 or above 130 beats per minute
+- Weight gain > 2 kg in 24 hours
+- Feet/ankles swelling rapidly worsening
+
+Signature: Dr. Tariq Hussain | PMDC: 98765

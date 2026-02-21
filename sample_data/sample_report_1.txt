@@ -1,0 +1,69 @@
+DISCHARGE SUMMARY
+=================
+Patient Name: Muhammad Ahmed Khan
+Age: 55 years | Gender: Male
+Date of Admission: 2026-02-10 | Date of Discharge: 2026-02-15
+Attending Physician: Dr. Fatima Malik, MBBS, FCPS (Medicine)
+Hospital: Shifa International Hospital, Islamabad
+
+PRINCIPAL DIAGNOSIS:
+- Type 2 Diabetes Mellitus (uncontrolled, HbA1c: 9.2%)
+- Hypertension (Stage 2, BP: 168/102 mmHg on admission)
+- Diabetic Nephropathy (Stage 3 CKD, eGFR: 38 mL/min)
+
+SECONDARY DIAGNOSES:
+- Dyslipidemia
+- Obesity (BMI: 31.4)
+
+PRESENTING COMPLAINT:
+Patient presented with 3-day history of excessive thirst, frequent urination (polyuria), fatigue, and blurred vision. Blood glucose on admission: 340 mg/dL.
+
+INVESTIGATIONS:
+- Fasting Blood Glucose: 340 mg/dL (high)
+- HbA1c: 9.2% (target <7%)
+- Serum Creatinine: 1.8 mg/dL (elevated)
+- eGFR: 38 mL/min (CKD Stage 3)
+- CBC: Normal
+- Lipid Profile: Total Cholesterol 240 mg/dL, LDL 160 mg/dL (elevated)
+- Urine Albumin-to-Creatinine Ratio: 320 mg/g (microalbuminuria)
+- ECG: Normal sinus rhythm
+- Fundoscopy: Background diabetic retinopathy
+
+TREATMENT GIVEN DURING ADMISSION:
+- IV fluid resuscitation (Normal Saline 0.9%)
+- Insulin drip for glucose control
+- Antihypertensive therapy initiated
+
+DISCHARGE MEDICATIONS:
+1. Metformin 500 mg twice daily (with meals — morning and evening)
+2. Glibenclamide 5 mg once daily (before breakfast)
+3. Amlodipine 5 mg once daily (morning)
+4. Losartan 50 mg once daily (evening, renoprotective)
+5. Atorvastatin 20 mg once daily (at bedtime)
+6. Aspirin 75 mg once daily (with morning meal)
+
+DIET INSTRUCTIONS:
+- Diabetic diet: low sugar, low salt, low fat
+- Fluid restriction: 1.5 litres per day (due to CKD)
+- Avoid red meat, processed foods, high-potassium foods (bananas, oranges)
+- Small frequent meals (5-6 per day)
+
+FOLLOW-UP INSTRUCTIONS:
+- Follow-up in 2 weeks with Dr. Fatima Malik (OPD Clinic, Room 204)
+- Repeat HbA1c and Kidney Function Tests in 3 months
+- Ophthalmology review in 1 month for diabetic retinopathy monitoring
+- Monitor blood pressure at home daily (target: <130/80 mmHg)
+- Check fasting blood glucose every morning (target: 80-130 mg/dL)
+
+RED FLAG SYMPTOMS — SEEK IMMEDIATE MEDICAL ATTENTION IF:
+- Blood glucose drops below 70 mg/dL (hypoglycemia): sweating, trembling, confusion
+- Blood pressure exceeds 180/110 mmHg
+- Sudden chest pain, shortness of breath, or left arm pain
+- Sudden vision loss or severe headache
+- Swelling of feet/ankles increases rapidly
+- Decreased urine output (less than 500 mL/day)
+
+DISCHARGE CONDITION: Stable
+PROGNOSIS: Guarded — requires strict medication adherence and lifestyle modification
+
+Signed: Dr. Fatima Malik | Registration: PMC-12345
