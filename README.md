@@ -49,23 +49,9 @@
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────┐
-│  Streamlit UI   │  (Patient-facing interface)
-└────────┬────────┘
-         │ HTTP
-┌────────▼────────┐
-│  FastAPI Backend│  (REST API + Scheduler)
-└────┬───┬───┬────┘
-     │   │   │
-  ┌──▼┐ ┌▼─┐ ┌▼─────┐
-  │OCR│ │ML│ │RAG KB│  (Parser, Recommender, Risk, Retriever)
-  └───┘ └──┘ └──────┘
-     │
-  ┌──▼──────┐
-  │ SQLite  │  (Uploads, Logs, Metrics, Reminders)
-  └─────────┘
-```
+![CarePath AI Architecture](docs/CarePath-AI.drawio.png)
+
+**Pipeline:** Patient Upload → OCR + PDF Parser → Clinical Entity Extraction → Groq LLM (EN+Urdu Summary) → RAG Retriever (LangChain + FAISS) → Risk + Safety Scan → Care Plan · Red Flags · Q&A Chatbot · PDF Export → SQLite DB
 
 ### Tech Stack
 | Layer | Technology |
