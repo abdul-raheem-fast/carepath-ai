@@ -383,7 +383,7 @@ def build_patient_handout_pdf(upload: Dict[str, Any]) -> bytes:
     story.append(Spacer(1, 10 * mm))
     story.append(HRFlowable(width="100%", thickness=1, color=DIVIDER))
     story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph(f"⚕️  {DISCLAIMER}", styles["disclaimer"]))
+    story.append(Paragraph(f"[!]  {DISCLAIMER}", styles["disclaimer"]))
     story.append(Paragraph("CarePath AI — Powered by Groq Llama 3.1 | For educational purposes only.", styles["footer"]))
 
     doc.build(story, onFirstPage=_on_page, onLaterPages=_on_page)

@@ -309,7 +309,7 @@ with st.sidebar:
     st.markdown('<hr style="border:none;border-top:1px solid #546e7a;margin:8px 0;">', unsafe_allow_html=True)
     st.session_state["pitch_mode"] = st.toggle("🎯 Judge pitch mode", value=True)
     st.markdown('<hr style="border:none;border-top:1px solid #546e7a;margin:8px 0;">', unsafe_allow_html=True)
-    st.markdown('<div style="background:#37474f;border-radius:8px;padding:10px 12px;font-size:0.82rem;">⚕️ <strong>Not a medical diagnosis.</strong><br>Always consult a licensed doctor.</div>', unsafe_allow_html=True)
+    st.markdown('<div style="background:#37474f;border-radius:8px;padding:10px 12px;font-size:0.82rem;">🩺 <strong>Not a medical diagnosis.</strong><br>Always consult a licensed doctor.</div>', unsafe_allow_html=True)
 
 # ── Backend error banner ──────────────────────────────────────────────────────
 if not _BACKEND_OK:
@@ -484,7 +484,7 @@ with tab_care:
             st.session_state["chat_history"].append({"q": question, "a": cd["answer"], "citations": cd.get("citations", [])})
             st.rerun()
 
-    st.markdown(f'<div class="disc">⚕️ {result["disclaimer"]}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="disc">🩺 {result["disclaimer"]}</div>', unsafe_allow_html=True)
 
 with tab_admin:
     st.markdown('<div class="card card-teal"><p class="sec-hdr">📊 Admin Analytics Dashboard</p></div>', unsafe_allow_html=True)

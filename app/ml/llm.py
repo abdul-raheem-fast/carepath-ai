@@ -1,7 +1,13 @@
 import os
+import time
 from typing import Protocol
 
 import requests
+
+
+_GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
+_RETRY_ATTEMPTS = 2
+_RETRY_DELAY_S = 1.5
 
 
 class LLMProvider(Protocol):
@@ -24,31 +30,39 @@ class GroqLLM:
         self.model = model
 
     def generate(self, prompt: str) -> str:
-        response = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": self.model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a safe healthcare assistant. Never claim diagnosis certainty.",
+        last_exc: Exception = RuntimeError("No attempts made")
+        for attempt in range(1, _RETRY_ATTEMPTS + 1):
+            try:
+                response = requests.post(
+                    _GROQ_ENDPOINT,
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
                     },
-                    {
-                        "role": "user",
-                        "content": prompt,
+                    json={
+                        "model": self.model,
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "You are a safe healthcare assistant. Never claim diagnosis certainty.",
+                            },
+                            {
+                                "role": "user",
+                                "content": prompt,
+                            },
+                        ],
+                        "temperature": 0.2,
+                        "max_tokens": 1024,
                     },
-                ],
-                "temperature": 0.2,
-            },
-            timeout=30,
-        )
-        response.raise_for_status()
-        payload = response.json()
-        return payload["choices"][0]["message"]["content"].strip()
+                    timeout=30,
+                )
+                response.raise_for_status()
+                return response.json()["choices"][0]["message"]["content"].strip()
+            except Exception as exc:
+                last_exc = exc
+                if attempt < _RETRY_ATTEMPTS:
+                    time.sleep(_RETRY_DELAY_S)
+        raise last_exc
 
 
 def get_llm_provider() -> LLMProvider:
